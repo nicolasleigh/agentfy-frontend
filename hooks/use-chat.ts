@@ -55,7 +55,7 @@ export function useChatMessages() {
       setStreamingContent("")
 
       const body = {
-        model: "demo-chat",
+        model: process.env.NEXT_PUBLIC_MODEL || "llama3.1:8b",
         messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
         conversation_id: convId || null,
         rag_enabled: true,
