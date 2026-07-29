@@ -24,6 +24,13 @@ export function streamChat(
 ): () => void {
   const token = localStorage.getItem("access_token")
   const controller = new AbortController()
+  let finished = false
+
+  const safeOnFinish = (reason: string | null) => {
+    if (finished) return
+    finished = true
+    callbacks.onFinish(reason)
+  }
 
   ;(async () => {
     try {
@@ -68,7 +75,7 @@ export function streamChat(
 
           const data = trimmed.slice(6)
           if (data === "[DONE]") {
-            callbacks.onFinish("stop")
+            safeOnFinish("stop")
             return
           }
 
@@ -80,7 +87,7 @@ export function streamChat(
             }
             const fr = parsed.choices?.[0]?.finish_reason
             if (fr) {
-              callbacks.onFinish(fr)
+              safeOnFinish(fr)
             }
           } catch {
             // skip malformed chunk
@@ -88,7 +95,7 @@ export function streamChat(
         }
       }
 
-      callbacks.onFinish("stop")
+      safeOnFinish("stop")
     } catch (err) {
       if ((err as Error).name === "AbortError") return
       callbacks.onError(err as Error)
