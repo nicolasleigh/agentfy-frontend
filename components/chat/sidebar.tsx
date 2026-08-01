@@ -22,6 +22,10 @@ interface SidebarProps {
   onClose?: () => void
 }
 
+// Cache across remounts so the user name doesn't flash in on every
+// navigation (Next.js remounts the page tree between dynamic segments).
+let cachedUser: UserPublic | null = null
+
 export function Sidebar({ onClose }: SidebarProps) {
   const router = useRouter()
   const params = useParams()
@@ -29,10 +33,12 @@ export function Sidebar({ onClose }: SidebarProps) {
   const { logout } = useAuth()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState("")
-  const [user, setUser] = useState<UserPublic | null>(null)
+  const [user, setUser] = useState<UserPublic | null>(() => cachedUser)
 
   useEffect(() => {
-    setUser(auth.getUser())
+    const u = auth.getUser()
+    cachedUser = u
+    setUser(u)
   }, [])
 
   const currentId = params?.id as string | undefined

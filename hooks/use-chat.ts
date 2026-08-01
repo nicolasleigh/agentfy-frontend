@@ -15,34 +15,45 @@ export function useChatMessages() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [streaming, setStreaming] = useState(false)
   const [streamingContent, setStreamingContent] = useState("")
+  // Start loading when mounted on a conversation page so the empty state
+  // ("Start a conversation") never flashes before history arrives.
+  const [loadingHistory, setLoadingHistory] = useState(() => Boolean(convId))
   const abortRef = useRef<(() => void) | null>(null)
-  const convIdRef = useRef<string | undefined>(convId)
 
-  // Load history when conversation changes
+  // Load history when conversation changes. Keep the previous messages
+  // visible while fetching — the UI overlays a loading spinner instead of
+  // flashing an empty state.
   useEffect(() => {
-    convIdRef.current = convId
-
     if (!convId) {
       setMessages([])
+      setLoadingHistory(false)
       return
     }
+
+    let cancelled = false
+    setLoadingHistory(true)
 
     conversations
       .getMessages(convId)
       .then((res) => {
-        // only apply if we're still on this conversation
-        if (convIdRef.current === convId) {
-          setMessages(
-            res.messages.map((m: MessageResponse) => ({
-              role: m.role as ChatMessage["role"],
-              content: m.content,
-            })),
-          )
-        }
+        if (cancelled) return
+        setMessages(
+          res.messages.map((m: MessageResponse) => ({
+            role: m.role as ChatMessage["role"],
+            content: m.content,
+          })),
+        )
       })
       .catch(() => {
         // conversation might not exist
       })
+      .finally(() => {
+        if (!cancelled) setLoadingHistory(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [convId])
 
   const sendMessage = useCallback(
@@ -106,6 +117,7 @@ export function useChatMessages() {
     messages,
     streaming,
     streamingContent,
+    loadingHistory,
     sendMessage,
     stopStreaming,
   }

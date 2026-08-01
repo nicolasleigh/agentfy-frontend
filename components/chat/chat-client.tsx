@@ -9,8 +9,14 @@ import { Button } from "@/components/ui/button"
 import { useChatMessages } from "@/hooks/use-chat"
 
 export function ChatClient() {
-  const { messages, streaming, streamingContent, sendMessage, stopStreaming } =
-    useChatMessages()
+  const {
+    messages,
+    streaming,
+    streamingContent,
+    loadingHistory,
+    sendMessage,
+    stopStreaming,
+  } = useChatMessages()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const handleSend = useCallback(
@@ -52,6 +58,7 @@ export function ChatClient() {
           messages={messages}
           streamingContent={streamingContent}
           streaming={streaming}
+          loading={loadingHistory}
         />
 
         {/* Input area */}

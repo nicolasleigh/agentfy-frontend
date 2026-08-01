@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { LoaderCircleIcon } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -10,6 +11,8 @@ interface ChatMessagesProps {
   messages: ChatMessage[]
   streamingContent?: string
   streaming?: boolean
+  /** True while a conversation's history is being fetched. */
+  loading?: boolean
 }
 
 function MarkdownContent({ content }: { content: string }) {
@@ -25,7 +28,10 @@ function MarkdownContent({ content }: { content: string }) {
           const lang = firstLine > 0 ? code.slice(0, firstLine).trim() : ""
           const codeContent = firstLine > 0 ? code.slice(firstLine + 1) : code
           return (
-            <pre key={i} className="my-2 overflow-x-auto rounded-lg bg-muted p-4 text-sm">
+            <pre
+              key={i}
+              className="my-2 overflow-x-auto rounded-lg bg-muted p-4 text-sm"
+            >
               {lang && (
                 <div className="mb-1 text-xs text-muted-foreground">{lang}</div>
               )}
@@ -52,6 +58,7 @@ export function ChatMessages({
   messages,
   streamingContent,
   streaming,
+  loading = false,
 }: ChatMessagesProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -61,47 +68,58 @@ export function ChatMessages({
     }
   }, [messages, streamingContent])
 
-  if (messages.length === 0 && !streaming) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center text-muted-foreground">
-          <h3 className="text-lg font-medium">Start a conversation</h3>
-          <p className="text-sm">Send a message to begin chatting with the AI.</p>
-        </div>
-      </div>
-    )
-  }
+  const isEmpty = messages.length === 0 && !streaming && !loading
 
   return (
-    <ScrollArea ref={scrollRef} className="flex-1 p-4">
-      <div className="mx-auto max-w-3xl space-y-4">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <Card
-              className={`max-w-[80%] px-4 py-3 ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted"
-              }`}
-            >
-              <MarkdownContent content={msg.content} />
-            </Card>
+    <div className="relative flex flex-1 flex-col">
+      {isEmpty ? (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <h3 className="text-lg font-medium">Start a conversation</h3>
+            <p className="text-sm">
+              Send a message to begin chatting with the AI.
+            </p>
           </div>
-        ))}
+        </div>
+      ) : (
+        <ScrollArea ref={scrollRef} className="flex-1 p-4">
+          <div className="mx-auto max-w-3xl space-y-4">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <Card
+                  className={`max-w-[80%] px-4 py-3 ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  <MarkdownContent content={msg.content} />
+                </Card>
+              </div>
+            ))}
 
-        {/* Streaming message */}
-        {streaming && streamingContent && (
-          <div className="flex justify-start">
-            <Card className="max-w-[80%] bg-muted px-4 py-3">
-              <MarkdownContent content={streamingContent} />
-              <span className="inline-block h-4 w-2 animate-pulse bg-foreground/50 ml-1" />
-            </Card>
+            {/* Streaming message */}
+            {streaming && streamingContent && (
+              <div className="flex justify-start">
+                <Card className="max-w-[80%] bg-muted px-4 py-3">
+                  <MarkdownContent content={streamingContent} />
+                  <span className="inline-block h-4 w-2 animate-pulse bg-foreground/50 ml-1" />
+                </Card>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </ScrollArea>
+        </ScrollArea>
+      )}
+
+      {/* Loading spinner overlaid on the previous content while history loads */}
+      {/* {loading && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/30">
+          <LoaderCircleIcon className="size-5 animate-spin text-muted-foreground" />
+        </div>
+      )} */}
+    </div>
   )
 }
