@@ -71,7 +71,7 @@ export function ChatMessages({
   const isEmpty = messages.length === 0 && !streaming && !loading
 
   return (
-    <div className="relative flex flex-1 flex-col">
+    <div className="relative flex flex-1 flex-col h-full overflow-scroll">
       {isEmpty ? (
         <div className="flex flex-1 items-center justify-center">
           <div className="text-center text-muted-foreground">
