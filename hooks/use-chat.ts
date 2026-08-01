@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { chat, conversations } from "@/lib/api-client"
+import { conversations } from "@/lib/api-client"
 import { streamChat } from "@/lib/chat-stream"
 import type { ChatMessage, MessageResponse } from "@/lib/types"
 
@@ -68,13 +68,20 @@ export function useChatMessages() {
           fullContent += text
           setStreamingContent(fullContent)
         },
-        onFinish: (_reason) => {
+        onFinish: (_reason, conversationId) => {
           setMessages((prev) => [
             ...prev,
             { role: "assistant", content: fullContent },
           ])
           setStreamingContent("")
           setStreaming(false)
+
+          // First message sent from /chat auto-created a conversation on the
+          // backend. Navigate to it and refresh the sidebar list.
+          if (!convId && conversationId) {
+            router.replace(`/chat/${conversationId}`)
+            window.dispatchEvent(new Event("conversations:refresh"))
+          }
         },
         onError: (err) => {
           console.error("Stream error:", err)

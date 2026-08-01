@@ -69,6 +69,8 @@ export interface StreamDelta {
     delta: { content?: string }
     finish_reason: string | null
   }[]
+  /** Set on the leading meta chunk when a conversation was auto-created. */
+  conversation_id?: string
 }
 
 // ─── Conversation ───────────────────────────────────────

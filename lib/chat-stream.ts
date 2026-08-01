@@ -4,7 +4,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"
 
 export interface StreamCallbacks {
   onDelta: (content: string) => void
-  onFinish: (reason: string | null) => void
+  onFinish: (reason: string | null, conversationId: string | null) => void
   onError: (error: Error) => void
 }
 
@@ -25,11 +25,12 @@ export function streamChat(
   const token = localStorage.getItem("access_token")
   const controller = new AbortController()
   let finished = false
+  let conversationId: string | null = null
 
   const safeOnFinish = (reason: string | null) => {
     if (finished) return
     finished = true
-    callbacks.onFinish(reason)
+    callbacks.onFinish(reason, conversationId)
   }
 
   ;(async () => {
@@ -81,6 +82,9 @@ export function streamChat(
 
           try {
             const parsed: StreamDelta = JSON.parse(data)
+            if (parsed.conversation_id) {
+              conversationId = parsed.conversation_id
+            }
             const content = parsed.choices?.[0]?.delta?.content
             if (content) {
               callbacks.onDelta(content)

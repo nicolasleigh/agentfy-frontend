@@ -1,13 +1,20 @@
 "use client"
 
 import { useRouter, useParams } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { MoreHorizontalIcon, PencilIcon, TrashIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useConversations } from "@/hooks/use-conversations"
-import type { Conversation } from "@/lib/types"
+import type { Conversation, UserPublic } from "@/lib/types"
 import { auth } from "@/lib/api-client"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -22,10 +29,13 @@ export function Sidebar({ onClose }: SidebarProps) {
   const { logout } = useAuth()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState("")
-  const [menuId, setMenuId] = useState<string | null>(null)
+  const [user, setUser] = useState<UserPublic | null>(null)
+
+  useEffect(() => {
+    setUser(auth.getUser())
+  }, [])
 
   const currentId = params?.id as string | undefined
-  const user = auth.getUser()
 
   async function handleNew() {
     const conv = await create()
@@ -43,12 +53,10 @@ export function Sidebar({ onClose }: SidebarProps) {
   function startEdit(conv: Conversation) {
     setEditingId(conv.id)
     setEditTitle(conv.title)
-    setMenuId(null)
   }
 
   async function handleDelete(id: string) {
     await remove(id)
-    setMenuId(null)
     if (currentId === id) {
       router.push("/chat")
     }
@@ -75,7 +83,7 @@ export function Sidebar({ onClose }: SidebarProps) {
         ) : (
           <div className="p-2 space-y-1">
             {items.map((conv) => (
-              <div key={conv.id} className="group relative">
+              <div key={conv.id} className="flex items-center gap-1">
                 {editingId === conv.id ? (
                   <form
                     onSubmit={(e) => {
@@ -83,6 +91,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                       handleRename(conv.id)
                     }}
                     onBlur={() => handleRename(conv.id)}
+                    className="flex-1"
                   >
                     <Input
                       value={editTitle}
@@ -92,38 +101,46 @@ export function Sidebar({ onClose }: SidebarProps) {
                     />
                   </form>
                 ) : (
-                  <Button
-                    variant={currentId === conv.id ? "secondary" : "ghost"}
-                    className="w-full justify-start text-sm font-normal h-9 px-3"
-                    onClick={() => {
-                      router.push(`/chat/${conv.id}`)
-                      onClose?.()
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault()
-                      setMenuId(menuId === conv.id ? null : conv.id)
-                    }}
-                  >
-                    <span className="truncate">{conv.title}</span>
-                  </Button>
-                )}
+                  <>
+                    <Button
+                      variant={currentId === conv.id ? "secondary" : "ghost"}
+                      className="flex-1 justify-start text-sm font-normal h-9 px-3"
+                      onClick={() => {
+                        router.push(`/chat/${conv.id}`)
+                        onClose?.()
+                      }}
+                    >
+                      <span className="truncate">{conv.title}</span>
+                    </Button>
 
-                {/* Context menu */}
-                {menuId === conv.id && (
-                  <div className="absolute right-0 top-full z-50 w-32 rounded-md border bg-popover p-1 shadow-md">
-                    <button
-                      className="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
-                      onClick={() => startEdit(conv)}
-                    >
-                      Rename
-                    </button>
-                    <button
-                      className="w-full rounded-sm px-2 py-1.5 text-left text-sm text-destructive hover:bg-accent"
-                      onClick={() => handleDelete(conv.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Conversation actions"
+                            className="shrink-0"
+                          >
+                            <MoreHorizontalIcon className="size-4" />
+                          </Button>
+                        }
+                      />
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => startEdit(conv)}>
+                          <PencilIcon className="size-4" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => handleDelete(conv.id)}
+                        >
+                          <TrashIcon className="size-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
                 )}
               </div>
             ))}

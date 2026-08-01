@@ -24,6 +24,14 @@ export function useConversations() {
     fetchList()
   }, [fetchList])
 
+  // Refetch when a conversation is auto-created elsewhere (e.g. the first
+  // message sent from /chat). Dispatched by use-chat.ts.
+  useEffect(() => {
+    const onRefresh = () => fetchList()
+    window.addEventListener("conversations:refresh", onRefresh)
+    return () => window.removeEventListener("conversations:refresh", onRefresh)
+  }, [fetchList])
+
   const create = useCallback(async (title?: string) => {
     const conv = await conversations.create(title)
     setItems((prev) => [conv, ...prev])
