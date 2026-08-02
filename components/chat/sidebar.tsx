@@ -13,6 +13,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils"
+import { DocumentsSection } from "@/components/chat/documents-section"
 import { useConversations } from "@/hooks/use-conversations"
 import type { Conversation, UserPublic } from "@/lib/types"
 import { auth } from "@/lib/api-client"
@@ -34,6 +36,9 @@ export function Sidebar({ onClose }: SidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const [user, setUser] = useState<UserPublic | null>(() => cachedUser)
+  // JS-driven press state for the row (CSS :active would also fire when
+  // pressing the inner "..." button — the thing we're trying to avoid).
+  const [pressedId, setPressedId] = useState<string | null>(null)
 
   useEffect(() => {
     const u = auth.getUser()
@@ -78,6 +83,9 @@ export function Sidebar({ onClose }: SidebarProps) {
         </Button>
       </div>
 
+      {/* Documents */}
+      <DocumentsSection />
+
       {/* Conversation list */}
       <ScrollArea className="flex-1">
         {loading ? (
@@ -107,26 +115,50 @@ export function Sidebar({ onClose }: SidebarProps) {
                     />
                   </form>
                 ) : (
-                  <>
-                    <Button
-                      variant={currentId === conv.id ? "secondary" : "ghost"}
-                      className="flex-1 justify-start text-sm font-normal h-9 px-3"
-                      onClick={() => {
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      router.push(`/chat/${conv.id}`)
+                      onClose?.()
+                    }}
+                    onKeyDown={(e) => {
+                      // ignore keydowns bubbled from the nested "..." button
+                      if (e.target !== e.currentTarget) return
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
                         router.push(`/chat/${conv.id}`)
                         onClose?.()
-                      }}
-                    >
-                      <span className="truncate">{conv.title}</span>
-                    </Button>
+                      }
+                    }}
+                    onPointerDown={() => setPressedId(conv.id)}
+                    onPointerUp={() => setPressedId(null)}
+                    onPointerLeave={() => setPressedId(null)}
+                    onPointerCancel={() => setPressedId(null)}
+                    className={cn(
+                      "flex h-9 flex-1 cursor-pointer select-none items-center gap-1.5 rounded-lg px-3 text-sm font-normal outline-none transition-all focus-visible:ring-3 focus-visible:ring-ring/50",
+                      currentId === conv.id
+                        ? "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)]"
+                        : "hover:bg-muted hover:text-foreground dark:hover:bg-muted/50",
+                      pressedId === conv.id && "translate-y-px",
+                    )}
+                  >
+                    <span className="min-w-0 flex-1 truncate text-left">
+                      {conv.title}
+                    </span>
 
+                    {/* stopPropagation on click/pointerdown: pressing "..." must
+                        neither navigate nor trigger the row's press state. */}
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         render={
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label="Conversation actions"
                             className="shrink-0"
+                            aria-label="Conversation actions"
+                            onClick={(e) => e.stopPropagation()}
+                            onPointerDown={(e) => e.stopPropagation()}
                           >
                             <MoreHorizontalIcon className="size-4" />
                           </Button>
@@ -146,7 +178,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </>
+                  </div>
                 )}
               </div>
             ))}
