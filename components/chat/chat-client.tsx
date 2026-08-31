@@ -6,6 +6,7 @@ import { ChatInput } from "@/components/chat/chat-input"
 import { ChatMessages } from "@/components/chat/chat-messages"
 import { Sidebar } from "@/components/chat/sidebar"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import { useChatMessages } from "@/hooks/use-chat"
 
 export function ChatClient() {
@@ -14,6 +15,9 @@ export function ChatClient() {
     streaming,
     streamingContent,
     loadingHistory,
+    toolsEnabled,
+    setToolsEnabled,
+    currentTool,
     sendMessage,
     stopStreaming,
   } = useChatMessages()
@@ -51,6 +55,10 @@ export function ChatClient() {
             ☰
           </Button>
           <h1 className="text-sm font-medium">AI Chat</h1>
+          <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+            <span>⚙ 工具</span>
+            <Switch checked={toolsEnabled} onCheckedChange={setToolsEnabled} />
+          </div>
         </header>
 
         {/* Messages */}
@@ -59,6 +67,7 @@ export function ChatClient() {
           streamingContent={streamingContent}
           streaming={streaming}
           loading={loadingHistory}
+          currentTool={currentTool}
         />
 
         {/* Input area */}

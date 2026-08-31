@@ -39,6 +39,8 @@ export interface ChatCompletionRequest {
   stream?: boolean
   conversation_id?: string | null
   rag_enabled?: boolean
+  /** Allow the model to call tools (internal RAG search + external MCP tools). */
+  tools_enabled?: boolean
 }
 
 export interface ChatCompletionChoice {
@@ -71,6 +73,8 @@ export interface StreamDelta {
   }[]
   /** Set on the leading meta chunk when a conversation was auto-created. */
   conversation_id?: string
+  /** Set when the model starts calling a tool during the agentic loop. */
+  tool_call?: string
 }
 
 // ─── Conversation ───────────────────────────────────────

@@ -13,6 +13,8 @@ interface ChatMessagesProps {
   streaming?: boolean
   /** True while a conversation's history is being fetched. */
   loading?: boolean
+  /** Tool the model is currently calling (agentic loop), shown while streaming. */
+  currentTool?: string | null
 }
 
 function MarkdownContent({ content }: { content: string }) {
@@ -59,6 +61,7 @@ export function ChatMessages({
   streamingContent,
   streaming,
   loading = false,
+  currentTool = null,
 }: ChatMessagesProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -100,6 +103,13 @@ export function ChatMessages({
                 </Card>
               </div>
             ))}
+
+            {/* Tool-call indicator (shown while the model runs a tool) */}
+            {streaming && currentTool && (
+              <div className="flex justify-start text-sm text-muted-foreground">
+                <span>🔧 正在调用 {currentTool}…</span>
+              </div>
+            )}
 
             {/* Streaming message */}
             {streaming && streamingContent && (

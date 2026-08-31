@@ -18,6 +18,9 @@ export function useChatMessages() {
   // Start loading when mounted on a conversation page so the empty state
   // ("Start a conversation") never flashes before history arrives.
   const [loadingHistory, setLoadingHistory] = useState(() => Boolean(convId))
+  const [toolsEnabled, setToolsEnabled] = useState(true)
+  // Name of the tool the model is currently calling (shown in the UI).
+  const [currentTool, setCurrentTool] = useState<string | null>(null)
   const abortRef = useRef<(() => void) | null>(null)
 
   // Load history when conversation changes. Keep the previous messages
@@ -64,12 +67,14 @@ export function useChatMessages() {
 
       setStreaming(true)
       setStreamingContent("")
+      setCurrentTool(null)
 
       const body = {
         model: process.env.NEXT_PUBLIC_MODEL || "llama3.1:8b",
         messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
         conversation_id: convId || null,
         rag_enabled: true,
+        tools_enabled: toolsEnabled,
       }
 
       let fullContent = ""
@@ -79,6 +84,7 @@ export function useChatMessages() {
           fullContent += text
           setStreamingContent(fullContent)
         },
+        onToolCall: (name) => setCurrentTool(name),
         onFinish: (_reason, conversationId) => {
           setMessages((prev) => [
             ...prev,
@@ -86,6 +92,7 @@ export function useChatMessages() {
           ])
           setStreamingContent("")
           setStreaming(false)
+          setCurrentTool(null)
 
           // First message sent from /chat auto-created a conversation on the
           // backend. Navigate to it and refresh the sidebar list.
@@ -98,12 +105,13 @@ export function useChatMessages() {
           console.error("Stream error:", err)
           setStreamingContent("")
           setStreaming(false)
+          setCurrentTool(null)
         },
       })
 
       abortRef.current = abort
     },
-    [messages, convId],
+    [messages, convId, toolsEnabled],
   )
 
   const stopStreaming = useCallback(() => {
@@ -111,6 +119,7 @@ export function useChatMessages() {
     abortRef.current = null
     setStreaming(false)
     setStreamingContent("")
+    setCurrentTool(null)
   }, [])
 
   return {
@@ -118,6 +127,9 @@ export function useChatMessages() {
     streaming,
     streamingContent,
     loadingHistory,
+    toolsEnabled,
+    setToolsEnabled,
+    currentTool,
     sendMessage,
     stopStreaming,
   }

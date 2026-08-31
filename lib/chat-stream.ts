@@ -6,6 +6,8 @@ export interface StreamCallbacks {
   onDelta: (content: string) => void
   onFinish: (reason: string | null, conversationId: string | null) => void
   onError: (error: Error) => void
+  /** Fired when the model starts calling a tool (agentic loop). */
+  onToolCall?: (name: string) => void
 }
 
 /**
@@ -19,6 +21,7 @@ export function streamChat(
     temperature?: number | null
     conversation_id?: string | null
     rag_enabled?: boolean
+    tools_enabled?: boolean
   },
   callbacks: StreamCallbacks,
 ): () => void {
@@ -82,6 +85,10 @@ export function streamChat(
 
           try {
             const parsed: StreamDelta = JSON.parse(data)
+            if (parsed.tool_call) {
+              callbacks.onToolCall?.(parsed.tool_call)
+              continue
+            }
             if (parsed.conversation_id) {
               conversationId = parsed.conversation_id
             }
